@@ -25,7 +25,14 @@ void Comnunication_Loop(void){
     float tmp_dat[10];
     memcpy(tmp_dat, Control_Loop_Get_test(), sizeof(float)*10);
 
+#ifndef ENCODER_CALIBRATION
     HAL_UART_Transmit(&huart3, (uint8_t*)tmp_dat, sizeof(float)*6, 0xFFFF);
+
+#else
+    HAL_UART_Transmit(&huart3, (uint8_t*)tmp_dat, sizeof(float)*3, 0xFFFF);
+#endif
+
+
     uint8_t tail[4] = {0x00, 0x00, 0x80, 0x7f};
     HAL_UART_Transmit(&huart3, tail, 4, 0xFFFF);
 

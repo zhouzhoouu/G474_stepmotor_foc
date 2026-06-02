@@ -29,7 +29,7 @@ void ADC_Extract(volatile uint32_t* pdata){
 //    ADC_raw_read.Voltage_A = (int)(pdata[1]&0x0000ffff) - 2048;
 //    ADC_raw_read.Voltage_C = (int)(pdata[1]>>16) - 2048;
 
-    ADC_raw_read.Current_A = (int)(pdata[0]&0x0000ffff) - 2048;
+    ADC_raw_read.Current_A = -((int)(pdata[0]&0x0000ffff) - 2048);
     ADC_raw_read.Current_B = (int)(pdata[0]>>16) - 2048;
 
 }
@@ -50,7 +50,11 @@ void ADC_Angle_Extract(void){
     uint32_t raw_angle = ((uint32_t)rx_data[2] << 13) | ((uint32_t)rx_data[3] << 5) | (rx_data[4] >> 3);
 
 
+#ifdef INVERSE_ENCODER
+    ADC_angle_tmp.angle_raw = 0xFFFFF - (int)raw_angle;
+#else
     ADC_angle_tmp.angle_raw = raw_angle;
+#endif
 //    ADC_angle_tmp.lost_mag = (mag_rxbuf[3]&0b00000010)>>1;
 //    ADC_angle_tmp.overspeed = (mag_rxbuf[5]&0b00001000)>>3;
 }

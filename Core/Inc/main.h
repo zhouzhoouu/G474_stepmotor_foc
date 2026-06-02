@@ -80,7 +80,8 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
-
+// #define INVERSE_ENCODER         1U
+// #define ENCODER_CALIBRATION  1U
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

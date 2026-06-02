@@ -63,8 +63,8 @@ void HRTIM_Manager_Ctrl_Set_A(float rate){
     cmpv /= 4;
 
 
-    LL_HRTIM_TIM_SetCompare1(HRTIM,LL_HRTIM_TIMER_E,D_QUAD+cmpv);
-    LL_HRTIM_TIM_SetCompare2(HRTIM,LL_HRTIM_TIMER_E,D_Half+D_QUAD-cmpv);
+    LL_HRTIM_TIM_SetCompare1(HRTIM,LL_HRTIM_TIMER_E,D_QUAD-cmpv);
+    LL_HRTIM_TIM_SetCompare2(HRTIM,LL_HRTIM_TIMER_E,D_Half+D_QUAD+cmpv);
 
 }
 
@@ -80,8 +80,8 @@ void HRTIM_Manager_Ctrl_Set_B(float rate){
     int32_t cmpv = (int32_t)(D_FULL * rate);
     cmpv /= 4;
 
-    LL_HRTIM_TIM_SetCompare1(HRTIM,LL_HRTIM_TIMER_B,D_QUAD+cmpv);
-    LL_HRTIM_TIM_SetCompare2(HRTIM,LL_HRTIM_TIMER_B,D_Half+D_QUAD-cmpv);
+    LL_HRTIM_TIM_SetCompare1(HRTIM,LL_HRTIM_TIMER_B,D_QUAD-cmpv);
+    LL_HRTIM_TIM_SetCompare2(HRTIM,LL_HRTIM_TIMER_B,D_Half+D_QUAD+cmpv);
 
 }
 
