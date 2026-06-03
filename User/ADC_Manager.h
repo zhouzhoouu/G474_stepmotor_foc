@@ -3,7 +3,7 @@
 
 #include "main.h"
 
-#define Ts (1/42500.f)
+#define Ts (1/34000.f)
 #define ADC_Basic_Gain (3.3f/4096)
 
 #define ADC_IA_Gain (1.f/.3f)
@@ -33,7 +33,9 @@ typedef struct
 
 typedef struct
 {
-    uint32_t angle_raw;
+    int angle_raw;
+    int angle_diff;
+    float omega_mec;
     uint8_t lost_mag;
     uint8_t overspeed;
 }ADC_Angle_data;
