@@ -19,22 +19,24 @@ void Communication_Init(void){
 }
 
 
-
+#define N_CH 6
 void Comnunication_Loop(void){
 
-    float tmp_dat[10];
-    memcpy(tmp_dat, Control_Loop_Get_test(), sizeof(float)*10);
+    static uint8_t data_pack[sizeof(float)*10+4];
+    memcpy(data_pack, Control_Loop_Get_test(), sizeof(float)*N_CH);
+    memcpy(data_pack + sizeof(float)*N_CH, uart_tail, 4);
+
 
 #ifndef ENCODER_CALIBRATION
-    HAL_UART_Transmit(&huart3, (uint8_t*)tmp_dat, sizeof(float)*6, 0xFFFF);
+
+    HAL_UART_Transmit_DMA(&huart3, data_pack, sizeof(float)*N_CH + 4);
 
 #else
     HAL_UART_Transmit(&huart3, (uint8_t*)tmp_dat, sizeof(float)*3, 0xFFFF);
+    HAL_UART_Transmit(&huart3, tail, 4, 0xFFFF);
 #endif
 
 
-    uint8_t tail[4] = {0x00, 0x00, 0x80, 0x7f};
-    HAL_UART_Transmit(&huart3, tail, 4, 0xFFFF);
 
     count = (count+1)%10000;
         

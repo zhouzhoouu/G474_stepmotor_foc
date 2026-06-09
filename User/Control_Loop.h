@@ -4,6 +4,9 @@
 #include "ADC_Manager.h"
 #include "arm_math.h"
 
+#define SQ_2 (1.41421356237f)
+#define ID_START_RADPS (1500.f)
+#define abs (x) ((x)>0?(x):-(x))
 //R_s = 4.17ohm
 #define R_s (4.17f)
 
@@ -17,6 +20,8 @@
 #define psi_f (0.001f*11.5f)
 
 #define wc (200.f*2*PI)
+
+#define MAX_DUTY (0.95f)
 
 
 void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data);

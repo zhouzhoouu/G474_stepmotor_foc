@@ -101,9 +101,16 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
 
     float ang_err = 180.f - angle_mec;
 
-    float iq_ref = ang_err/40.f;
-    float id_ref = -.0f;
-     float u_ref = 2.4f;
+
+    float id_ref = 0.f;
+//    float abs_omega = omega_ele>0?omega_ele:-omega_ele;
+//    if(abs_omega>ID_START_RADPS)
+//        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*.8f;
+
+//    LIMTV(id_ref, .8f);
+
+    float iq_ref = .1f;ang_err/100.f;
+    float u_ref = 2.4f;
 
 //     static float theta = 0;
 //     static float iq_cos = 0.f;
@@ -121,21 +128,30 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     static float ref_d_pi, ref_q_pi, last_err_iq, last_err_id;
 
     float err_iq = iq_ref - iq;
-    ref_q_pi += (err_iq-last_err_iq)*L_q*wc; + err_iq*Ts*R_s*wc;
+    ref_q_pi += (err_iq-last_err_iq)*L_q*wc + err_iq*Ts*R_s*wc;
     last_err_iq = err_iq;
 
     float err_id = id_ref - id;
-    ref_d_pi += (err_id-last_err_id)*L_d*wc; + err_id*Ts*R_s*wc;
+    ref_d_pi += (err_id-last_err_id)*L_d*wc + err_id*Ts*R_s*wc;
     last_err_id = err_id;
 
 //    ref_q_pi = 0.0f;
 //    ref_d_pi = 0.0f;
 
-    LIMTV(ref_q_pi, ubus*0.95f);
-    LIMTV(ref_d_pi, ubus*0.95f);
+    float v_d_forward = -iq*L_q*omega_ele;
+    float v_q_forward = omega_ele*(id*L_d+psi_f);
 
-    float ref_D_d = ref_d_pi - iq*L_q*omega_ele;
-    float ref_D_q = ref_q_pi + omega_ele*(id*L_d+psi_f);
+    if(ref_d_pi + v_d_forward > ubus*MAX_DUTY)
+        ref_d_pi = ubus*MAX_DUTY - v_d_forward;
+    if(ref_d_pi + v_d_forward < -ubus*MAX_DUTY)
+        ref_d_pi = -ubus*MAX_DUTY - v_d_forward;
+    if(ref_q_pi + v_q_forward > ubus*MAX_DUTY)
+        ref_q_pi = ubus*MAX_DUTY - v_q_forward;
+    if(ref_q_pi + v_q_forward < -ubus*MAX_DUTY)
+        ref_q_pi = -ubus*MAX_DUTY - v_q_forward;
+
+    float ref_D_d = ref_d_pi + v_d_forward;
+    float ref_D_q = ref_q_pi + v_q_forward;
 
     ref_D_d /= ubus;
     ref_D_q /= ubus;
@@ -152,7 +168,7 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     HRTIM_Manager_Ctrl_Set_B(ref_D_b);
     HRTIM_Manager_Ctrl_Set_C(0.f);
 
-    adc_read_test[0] = angle_ele/180;
+    adc_read_test[0] = angle_ele/180.f;
     adc_read_test[1] = id;
     adc_read_test[2] = iq;
     adc_read_test[3] = omega_ele;
