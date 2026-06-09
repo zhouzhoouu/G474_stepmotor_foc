@@ -33,6 +33,8 @@ void ADC_Manager_Init(void){
     HAL_ADC_Start(&hadc2);
     HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)ADC_Buffer,N_CH*2);
 
+    Control_Manager_Init();
+
 }
 
 void ADC_Extract(volatile uint32_t* pdata){
@@ -82,7 +84,7 @@ void ADC_Angle_Extract(void){
         f2 = raw_theta_fix[0];
     }
     float k = (float)n_tail*(1/2097152.f);
-    raw_angle += f1; + (int)k*(f2-f1); // 插值补偿
+    raw_angle += f1 + (int)k*(f2-f1); // 插值补偿
 #endif
 
     ADC_angle_tmp.angle_diff = raw_angle - ADC_angle_tmp.angle_raw;

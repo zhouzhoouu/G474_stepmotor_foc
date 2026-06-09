@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dac.h"
 #include "dma.h"
 #include "hrtim.h"
 #include "spi.h"
@@ -100,6 +101,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM7_Init();
   MX_SPI2_Init();
+  MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
   Entry();
   /* USER CODE END 2 */

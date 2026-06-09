@@ -17,7 +17,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
         Task_Insert(ADC_Angle_Extract);
     }
     else if(htim->Instance == TIM7){
-        Task_Insert(Comnunication_Loop);
+//        Task_Insert(Comnunication_Loop);
     }
 }
 

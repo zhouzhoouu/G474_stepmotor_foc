@@ -8,18 +8,19 @@
 #define R_s (4.17f)
 
 //Lq = 7mH
-#define L_q (0.001f*7)
+#define L_q (0.001f*8)
 
 //Ld = 11mH
 #define L_d (0.001f*11)
 
 //psi_f = 13mWb
-#define psi_f (0.001f*14.f)
+#define psi_f (0.001f*11.5f)
 
-#define wc (300.f*2*PI)
+#define wc (200.f*2*PI)
 
 
 void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data);
+void Control_Manager_Init();
 
 float* Control_Loop_Get_test(void);
 volatile uint64_t Get_Ctrl_Tik(void);
