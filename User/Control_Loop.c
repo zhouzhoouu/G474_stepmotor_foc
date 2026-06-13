@@ -11,8 +11,8 @@ static volatile uint64_t ctrl_tik = 0;
 static float adc_read_test[10];
 
 static float mt6835_electrical_angle_normalized(uint32_t raw) {
-    uint32_t mod = ((uint32_t)raw * 50) % 2097152;
-    float angle = (float)mod * (360.f / 2097152.0f);   // [0, 360)
+    uint32_t mod = ((uint32_t)raw * 50) % MAX_ENCODER_ANGLE;
+    float angle = (float)mod * (360.f / MAX_ENCODER_ANGLE);   // [0, 360)
 
     if (angle >= 180.0f) angle -= 360.0f;           // 映射到 [-180,180)
     return angle;
@@ -48,11 +48,12 @@ static void Encoder_calibration_loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data*
     float amp = 0.1f+0.2f*omega/max_omega;
 
     static float theta = 0;
-    theta += Ts*360.f*omega;
+    amp = 0.15f;
+    theta += Ts*360.f*0.5f;
     if(theta > 360.f)
         theta -= 360;
 
-    float angle_mec = (float)angle_data->angle_raw * (360.f/2097152.f);
+    float angle_mec = (float)angle_data->angle_raw * (360.f/MAX_ENCODER_ANGLE);
     float angle_ele = mt6835_electrical_angle_normalized(angle_data->angle_raw);
 //    float angle_ele_from_mec = angle_mec*50.f;
 //    while (angle_ele_from_mec > 180.f) angle_ele_from_mec -= 360.f;
@@ -65,13 +66,19 @@ static void Encoder_calibration_loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data*
 //    HRTIM_Manager_AB_Stop();
     HRTIM_Manager_Ctrl_Set_C(0.f);
 
-    adc_read_test[0] = angle_ele;
-    if (theta > 180.f) {
-        adc_read_test[1] = theta - 360.f;
-    } else {
-        adc_read_test[1] = theta;
-    }
-    adc_read_test[2] = (float)angle_data->angle_raw;
+//    adc_read_test[0] = angle_ele;
+//    if (theta > 180.f) {
+//        adc_read_test[1] = theta - 360.f;
+//    } else {
+//        adc_read_test[1] = theta;
+//    }
+
+    float err = theta - angle_ele;
+    while (err > 0.f) err -= 360.f;
+    while (err < -720.f) err += 360.f;
+
+    adc_read_test[0] = (float)((int)(err*(MAX_ENCODER_ANGLE/(360.f*50.f))));
+    adc_read_test[1] = (float)angle_data->angle_raw;
 
 }
 
@@ -86,7 +93,7 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     float ia = (float)ADC_raw_read->Current_A * ADC_Basic_Gain * ADC_IA_Gain;
     float ib = (float)ADC_raw_read->Current_B * ADC_Basic_Gain * ADC_IB_Gain;
     float ubus = (float)ADC_raw_read->Voltage_Bus * ADC_Basic_Gain * ADC_UBus_Gain;
-    float angle_mec = (float)angle_data->angle_raw * (360.f/2097152.f);
+    float angle_mec = (float)angle_data->angle_raw * (360.f/MAX_ENCODER_ANGLE);
 
     float angle_ele = mt6835_electrical_angle_normalized(angle_data->angle_raw);
     float omega_ele = (angle_data->omega_mec) * 50.f;
@@ -102,22 +109,22 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     float ang_err = 180.f - angle_mec;
 
 
-    float id_ref = 0.f;
+    float id_ref = -0.f;
 //    float abs_omega = omega_ele>0?omega_ele:-omega_ele;
 //    if(abs_omega>ID_START_RADPS)
 //        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*.8f;
 
-//    LIMTV(id_ref, .8f);
+    LIMTV(id_ref, .8f);
 
-    float iq_ref = .1f;ang_err/100.f;
+    float iq_ref = 0.0f;ang_err/100.f;
     float u_ref = 2.4f;
 
 //     static float theta = 0;
 //     static float iq_cos = 0.f;
 //     static float iq_sin = 0.f;
-//     theta += Ts*360.f*10.f;//*85.f*N_test;
-//     if(theta > 360.f)
-//         theta -= 360;
+//     theta += Ts*360.f*90.f;//*85.f*N_test;
+//     if(theta > 180.f)
+//         theta -= 360.f;
 //
 //     float sin_f, cos_f;
 //     arm_sin_cos_f32(theta, &sin_f, &cos_f);
@@ -159,10 +166,10 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     float ref_D_a = ref_D_d * c - ref_D_q * s;
     float ref_D_b = ref_D_d * s + ref_D_q * c;
 
-    Control_Manager_DAC_Debug(iq);
+//    Control_Manager_DAC_Debug(angle_ele/180.f);
 //    HRTIM_Manager_AB_Stop();
-//     HRTIM_Manager_Ctrl_Set_A(0.15f*cos_f);
-//     HRTIM_Manager_Ctrl_Set_B(0.15f*sin_f);
+//     HRTIM_Manager_Ctrl_Set_A(0.25f*cos_f);
+//     HRTIM_Manager_Ctrl_Set_B(0.25f*sin_f);
 
     HRTIM_Manager_Ctrl_Set_A(ref_D_a);
     HRTIM_Manager_Ctrl_Set_B(ref_D_b);
@@ -172,7 +179,7 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     adc_read_test[1] = id;
     adc_read_test[2] = iq;
     adc_read_test[3] = omega_ele;
-    adc_read_test[4] = ubus;
+    adc_read_test[4] = ang_err;
 }
 
 

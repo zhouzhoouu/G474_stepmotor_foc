@@ -24,16 +24,15 @@ void Comnunication_Loop(void){
 
     static uint8_t data_pack[sizeof(float)*10+4];
     memcpy(data_pack, Control_Loop_Get_test(), sizeof(float)*N_CH);
-    memcpy(data_pack + sizeof(float)*N_CH, uart_tail, 4);
 
 
 #ifndef ENCODER_CALIBRATION
-
+    memcpy(data_pack + sizeof(float)*N_CH, uart_tail, 4);
     HAL_UART_Transmit_DMA(&huart3, data_pack, sizeof(float)*N_CH + 4);
 
 #else
-    HAL_UART_Transmit(&huart3, (uint8_t*)tmp_dat, sizeof(float)*3, 0xFFFF);
-    HAL_UART_Transmit(&huart3, tail, 4, 0xFFFF);
+    memcpy(data_pack + sizeof(float)*2, uart_tail, 4);
+    HAL_UART_Transmit_DMA(&huart3, data_pack, sizeof(float)*2 + 4);
 #endif
 
 

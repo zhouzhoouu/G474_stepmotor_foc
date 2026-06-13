@@ -3,6 +3,7 @@
 
 #include "main.h"
 
+#define MAX_ENCODER_ANGLE 65536
 #define Ts (1/34000.f)
 #define ADC_Basic_Gain (3.3f/4096)
 
@@ -34,10 +35,7 @@ typedef struct
 typedef struct
 {
     int angle_raw;
-    int angle_diff;
     float omega_mec;
-    uint8_t lost_mag;
-    uint8_t overspeed;
 }ADC_Angle_data;
 
 

@@ -11,13 +11,13 @@
 #define R_s (4.17f)
 
 //Lq = 7mH
-#define L_q (0.001f*8)
+#define L_q (0.001f*7)
 
 //Ld = 11mH
-#define L_d (0.001f*11)
+#define L_d (0.001f*7)
 
 //psi_f = 13mWb
-#define psi_f (0.001f*11.5f)
+#define psi_f (0.001f*9.f)
 
 #define wc (200.f*2*PI)
 
