@@ -113,11 +113,9 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
 //    float abs_omega = omega_ele>0?omega_ele:-omega_ele;
 //    if(abs_omega>ID_START_RADPS)
 //        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*.8f;
+//    LIMTV(id_ref, .8f);
 
-    LIMTV(id_ref, .8f);
-
-    float iq_ref = 0.0f;ang_err/100.f;
-    float u_ref = 2.4f;
+    float iq_ref = 0.5f;1*ang_err/180.f;
 
 //     static float theta = 0;
 //     static float iq_cos = 0.f;

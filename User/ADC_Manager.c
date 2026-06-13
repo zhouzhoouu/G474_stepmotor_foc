@@ -17,7 +17,7 @@ short raw_theta_fix[100] =
          -639, -631, -617, -622, -638, -625, -610, -642, -626,
          -611, -635, -631, -617, -621, -636, -622, -608, -640
         };
-short raw_theta_fix_bias = 328;
+short raw_theta_fix_bias = 270;//328;
 
 #define N_CH 2
 
@@ -56,12 +56,14 @@ void ADC_Extract(volatile uint32_t* pdata){
 
 void ADC_Angle_Extract(void){
 
+    static uint64_t last_tik;
     static uint8_t mag_txbuf[4]={0, 0, 0, 0};
     uint8_t rx_data[4] = {0};
 
     HAL_GPIO_WritePin(CSn_GPIO_Port,CSn_Pin,GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi2, mag_txbuf, rx_data, 4, 0xFFFF);
     HAL_GPIO_WritePin(CSn_GPIO_Port,CSn_Pin,GPIO_PIN_SET);
+    uint64_t tik = Get_Ctrl_Tik();
 
     uint16_t raw_angle = ((uint16_t)rx_data[0]<<8) | rx_data[1];
     uint16_t raw_omega_tmp = ((uint16_t)rx_data[2]<<9) | ((uint16_t)rx_data[3]<<1) | (rx_data[2]>>7);
@@ -92,8 +94,26 @@ void ADC_Angle_Extract(void){
     raw_angle += f1 + (int)k*(f2-f1) + raw_theta_fix_bias; // 插值补偿
 #endif
 
+    ADC_angle_tmp.angle_diff = raw_angle - ADC_angle_tmp.angle_raw;
     ADC_angle_tmp.angle_raw = raw_angle;
-    ADC_angle_tmp.omega_mec = (float)raw_omega*5.722f*(1/60.f)*2*PI;
+//    ADC_angle_tmp.omega_mec = (float)raw_omega*5.722f*(1/60.f)*2*PI;
+
+
+    while (ADC_angle_tmp.angle_diff > MAX_ENCODER_ANGLE/2) { // 角度差大于180度，说明发生了跨越
+        ADC_angle_tmp.angle_diff -= MAX_ENCODER_ANGLE; // 减去360度对应的计数值
+    }
+    while (ADC_angle_tmp.angle_diff < -MAX_ENCODER_ANGLE/2) { // 角度差小于-180度，说明发生了跨越
+        ADC_angle_tmp.angle_diff += MAX_ENCODER_ANGLE; // 加上360度对应的计数值
+    }
+
+    int dtik = (int)(tik-last_tik);
+    last_tik = tik;
+    if (dtik >0)
+    {
+        float omega_ref = (float)ADC_angle_tmp.angle_diff * (2*PI/MAX_ENCODER_ANGLE)/(Ts*(float)(dtik));
+        ADC_angle_tmp.omega_mec += 0.04f*(omega_ref - ADC_angle_tmp.omega_mec);
+
+    }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){

@@ -35,6 +35,7 @@ typedef struct
 typedef struct
 {
     int angle_raw;
+    int angle_diff;
     float omega_mec;
 }ADC_Angle_data;
 
