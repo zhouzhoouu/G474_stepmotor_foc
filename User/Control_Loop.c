@@ -200,8 +200,8 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     HRTIM_Manager_Ctrl_Set_C(0.f-bias);
 
     adc_read_test[0] = angle_ele/180.f;
-    adc_read_test[1] = ia;
-    adc_read_test[2] = ib;
+    adc_read_test[1] = id;
+    adc_read_test[2] = iq;
     adc_read_test[3] = angle_mec;
     adc_read_test[4] = target_pos;
 }

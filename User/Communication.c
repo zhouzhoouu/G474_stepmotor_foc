@@ -69,7 +69,7 @@ static void data_slice(const uint8_t *buf, float *out) {
 }
 
 static void Comnunication_Process(void){
-    HAL_UART_DMAStop(&huart3);
+    HAL_UART_AbortReceive(&huart3);
 
 
     if(UART_BUFFER[0]=='M' && UART_BUFFER[1]=='0'+SELF_ID && UART_BUFFER[3]==':'){
@@ -93,6 +93,7 @@ static void Comnunication_Process(void){
         }
 
     }
+
 
     HAL_UART_Receive_DMA(&huart3,UART_BUFFER,BUFFER_SIZE);
 }

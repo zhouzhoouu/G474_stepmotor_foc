@@ -1,95 +1,81 @@
 #include "ma600a.h"
-
 #include "spi.h"
-uint8_t rxbuf_angle[4];
-uint8_t spi3_free = 1;
+#include "main.h"
 
-//写ma600a的寄存器，只能写1位
-void ma600a_write_register(uint8_t reg_addr, uint8_t value) {
-    uint8_t tx_buf[6];  // 3帧 × 2字节
-    uint8_t rx_buf[6];
+// MA600A write: 3 separate SPI frames with 1ms delay between each
+void ma600a_write_register(uint8_t addr, uint8_t val) {
+    uint8_t tx[6], rx[6];
+    tx[0]=0xEA; tx[1]=0x54;           // Frame 1: write command
+    tx[2]=addr; tx[3]=val;            // Frame 2: address + value
+    tx[4]=0x00; tx[5]=0x00;           // Frame 3: dummy readback
 
-    // 第1帧：写寄存器命令 0xEA54
-    tx_buf[0] = 0xEA;
-    tx_buf[1] = 0x54;
-    // 第2帧：地址 + 值
-    tx_buf[2] = reg_addr;
-    tx_buf[3] = value;
-    // 第3帧：0x0000（读回验证）
-    tx_buf[4] = 0x00;
-    tx_buf[5] = 0x00;
-
-    // 第1帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx_buf, rx_buf, 2, 100);
+    HAL_SPI_TransmitReceive(&hspi2, tx, rx, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-
     HAL_Delay(1);
 
-    // 第2帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx_buf+ 2, rx_buf + 2, 2, 100);
+    HAL_SPI_TransmitReceive(&hspi2, tx+2, rx+2, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-
     HAL_Delay(1);
 
-    // 第3帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx_buf + 4, rx_buf + 4, 2, 100);
+    HAL_SPI_TransmitReceive(&hspi2, tx+4, rx+4, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-
     HAL_Delay(1);
-    // 可选：验证 rx_buf[5] == value
 }
 
-//读ma600a的寄存器，只能读1位
-void ma600a_read_register(uint8_t *rxbuf, uint8_t reg_addr) {
+// MA600A read: 2 separate SPI frames with 1ms delay
+void ma600a_read_register(uint8_t *rx, uint8_t addr) {
+    uint8_t tx[4], rx_buf[4]={0};
+    tx[0]=0xD2; tx[1]=addr;            // Frame 1: read command
+    tx[2]=0x00; tx[3]=0x00;            // Frame 2: dummy + readback
 
-    uint8_t tx_buf[4];
-    uint8_t rx_buf[4];
-
-    tx_buf[0] = 0xD2;
-    tx_buf[1] = reg_addr;
-    tx_buf[2] = 0x00;
-    tx_buf[3] = 0x00;
-
-    // 第1帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx_buf, rx_buf, 2, 100);
+    HAL_SPI_TransmitReceive(&hspi2, tx, rx_buf, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-
-    HAL_Delay(1);
-    // 第2帧
-    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi2, tx_buf + 2, rx_buf + 2, 2, 100);
-    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-
     HAL_Delay(1);
 
-    *rxbuf = rx_buf[3];
-}
-//读取角度的中断函数，非阻塞
+    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi2, tx+2, rx_buf+2, 2, 100);
+    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
+    HAL_Delay(1);
 
-void ma600a_set_MTSP() {
-    static uint8_t temp_MTSP;
-    ma600a_read_register(&temp_MTSP, MTSP_ADDR);
-    temp_MTSP |= 0x80; // 设置第7位为1
-    ma600a_write_register(MTSP_ADDR,temp_MTSP);
-    temp_MTSP = 0;
-    ma600a_read_register(&temp_MTSP, MTSP_ADDR);
+    *rx = rx_buf[3];
 }
 
-void ma600a_set_filter() {
-    static uint8_t temp_filter;
-    ma600a_read_register(&temp_filter,0x0D);
-    temp_filter &= 0b11110000; // 清除低4位
-    temp_filter |= FILTER14; // 设置低4位为0x08
-    ma600a_write_register(0x0D,temp_filter);
-    temp_filter = 0;
-    ma600a_read_register(&temp_filter,0x0D);
+// Clear error flags: send 0xD700 as one 16-bit SPI frame
+void ma600a_clear_errors(void) {
+    uint8_t tx[2] = {0xD7, 0x00};
+    uint8_t rx[2];
+    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi2, tx, rx, 2, 100);
+    HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
+    HAL_Delay(1);
 }
 
-void ma600a_init() {
-    ma600a_set_MTSP();
-    ma600a_set_filter();
+// Read STATUS register (0x1A) to check error flags
+// Returns: status byte (bit 7=NVMB, bit 6=ERRCRC, bit 5=ERRMEM, bit 4=ERRPAR)
+void ma600a_read_status(uint8_t *status) {
+    ma600a_read_register(status, STATUS_ADDR);
 }
+
+// Init: clear errors, set MTSP + filter bandwidth
+void ma600a_init(void) {
+    // 1. Clear any power-up error flags
+    ma600a_clear_errors();
+
+    // 2. Set MTSP (multi-turn zero position) bit 7 in register 0x1C
+    uint8_t temp;
+    ma600a_read_register(&temp, MTSP_ADDR);
+    temp |= 0x80;
+    ma600a_write_register(MTSP_ADDR, temp);
+    ma600a_read_register(&temp, MTSP_ADDR);
+
+    // 3. Set filter for maximum resolution in register 0x0D
+    ma600a_read_register(&temp, 0x0D);
+    temp = (temp & 0xF0) | FILTER14;
+    ma600a_write_register(0x0D, temp);
+    ma600a_read_register(&temp, 0x0D);
+}
+

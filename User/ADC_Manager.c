@@ -95,26 +95,26 @@ void ADC_Angle_Extract(void){
     raw_angle += f1 + (int)k*(f2-f1) + raw_theta_fix_bias; // 插值补偿
 #endif
 
-    ADC_angle_tmp.angle_diff = raw_angle - ADC_angle_tmp.angle_raw;
+    // ADC_angle_tmp.angle_diff = raw_angle - ADC_angle_tmp.angle_raw;
     ADC_angle_tmp.angle_raw = raw_angle;
-//    ADC_angle_tmp.omega_mec = (float)raw_omega*5.722f*(1/60.f)*2*PI;
+    ADC_angle_tmp.omega_mec = (float)raw_omega*5.722f*(1/60.f)*2*PI;
 
 
-    while (ADC_angle_tmp.angle_diff > MAX_ENCODER_ANGLE/2) { // 角度差大于180度，说明发生了跨越
-        ADC_angle_tmp.angle_diff -= MAX_ENCODER_ANGLE; // 减去360度对应的计数值
-    }
-    while (ADC_angle_tmp.angle_diff < -MAX_ENCODER_ANGLE/2) { // 角度差小于-180度，说明发生了跨越
-        ADC_angle_tmp.angle_diff += MAX_ENCODER_ANGLE; // 加上360度对应的计数值
-    }
-
-    int dtik = (int)(tik-last_tik);
-    last_tik = tik;
-    if (dtik >0)
-    {
-        float omega_ref = (float)ADC_angle_tmp.angle_diff * (2*PI/MAX_ENCODER_ANGLE)/(Ts*(float)(dtik));
-        ADC_angle_tmp.omega_mec += 0.04f*(omega_ref - ADC_angle_tmp.omega_mec);
-
-    }
+    // while (ADC_angle_tmp.angle_diff > MAX_ENCODER_ANGLE/2) { // 角度差大于180度，说明发生了跨越
+    //     ADC_angle_tmp.angle_diff -= MAX_ENCODER_ANGLE; // 减去360度对应的计数值
+    // }
+    // while (ADC_angle_tmp.angle_diff < -MAX_ENCODER_ANGLE/2) { // 角度差小于-180度，说明发生了跨越
+    //     ADC_angle_tmp.angle_diff += MAX_ENCODER_ANGLE; // 加上360度对应的计数值
+    // }
+    //
+    // int dtik = (int)(tik-last_tik);
+    // last_tik = tik;
+    // if (dtik >0)
+    // {
+    //     float omega_ref = (float)ADC_angle_tmp.angle_diff * (2*PI/MAX_ENCODER_ANGLE)/(Ts*(float)(dtik));
+    //     ADC_angle_tmp.omega_mec += 0.04f*(omega_ref - ADC_angle_tmp.omega_mec);
+    //
+    // }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){

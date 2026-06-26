@@ -7,8 +7,8 @@
 #define SQ_2 (1.41421356237f)
 #define ID_START_RADPS (1500.f)
 #define abs (x) ((x)>0?(x):-(x))
-//R_s = 4.17ohm
-#define R_s (4.17f)
+//R_s = 2.17ohm
+#define R_s (2.17f)
 
 //Lq = 7mH
 #define L_q (0.001f*6)
