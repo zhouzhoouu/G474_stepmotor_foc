@@ -5,5 +5,6 @@
 
 void Communication_Init(void);
 void Comnunication_Loop(void);
+void Comnunication_IDLE_Callback(void);
 
 #endif //G474_EDC_DIGPWR_COMMUNICATION_H

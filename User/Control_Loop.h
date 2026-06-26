@@ -21,7 +21,7 @@
 
 #define wc (100.f*2*PI)
 
-#define MAX_DUTY (0.95f)
+#define MAX_DUTY (SQ_2*0.95f)
 
 
 void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data);
@@ -29,5 +29,9 @@ void Control_Manager_Init();
 
 float* Control_Loop_Get_test(void);
 volatile uint64_t Get_Ctrl_Tik(void);
+
+void Control_Loop_Set_Pos(float mec_deg);
+void Control_Loop_Set_Speed(float Mec_radps);
+void Control_Loop_Set_Cur(float Cur_q);
 
 #endif

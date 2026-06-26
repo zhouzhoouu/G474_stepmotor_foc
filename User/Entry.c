@@ -5,6 +5,7 @@
 
 _Noreturn void Entry(void){
 
+    HAL_Delay(100);
     ADC_Manager_Init();
     HRTIM_Manager_Init();
 
@@ -18,4 +19,16 @@ _Noreturn void Entry(void){
         Task_Process();
     }
 
+}
+
+
+float AHRS_invSqrt(float num)
+{
+    float halfnum = 0.5f * num;
+    float y = num;
+    long i = *(long *)&y;
+    i = 0x5f3759df - (i >> 1);
+    y = *(float *)&i;
+    y = y * (1.5f - (halfnum * y * y));
+    return y;
 }

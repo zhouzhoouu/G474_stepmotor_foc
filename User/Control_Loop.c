@@ -2,6 +2,7 @@
 #include "HRTIM_Manager.h"
 #include "dac.h"
 #include "arm_math.h"
+#include "Entry.h"
 
 #define N_test 3
 
@@ -9,6 +10,15 @@
 
 static volatile uint64_t ctrl_tik = 0;
 static float adc_read_test[10];
+static float zero_pos = -38;
+static float target_pos = 0;
+static float target_speed = 0;
+static float target_current = 0;
+static enum {
+    POS_MODE = 0,
+    SPEED_MODE,
+    CURRENT_MODE
+} ctrl_mode = CURRENT_MODE;
 
 static float mt6835_electrical_angle_normalized(uint32_t raw) {
     uint32_t mod = ((uint32_t)raw * 50) % MAX_ENCODER_ANGLE;
@@ -104,19 +114,32 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
     float id = ia * c + ib * s;
     float iq = -ia * s + ib * c;
 
+    float iq_ref = 0.f;
 
-
-    float ang_err = 180.f - angle_mec;
+    if(ctrl_mode == POS_MODE){
+        float ang_err = target_pos + zero_pos - angle_mec;
+        while (ang_err > 180.f) ang_err -= 360.f;
+        while (ang_err < -180.f) ang_err += 360.f;
+        iq_ref = 12*ang_err/180.f - 0.15f*angle_data->omega_mec;
+    }
+    else if(ctrl_mode == SPEED_MODE){
+        float spd_err = target_speed - angle_data->omega_mec;
+        iq_ref = 0.1f*spd_err;
+    }
+    else if(ctrl_mode == CURRENT_MODE){
+        iq_ref = target_current;
+    }
 
 
     float id_ref = -0.f;
 //    float abs_omega = omega_ele>0?omega_ele:-omega_ele;
+//    float abs_iq_ref = iq_ref>0?iq_ref:-iq_ref;
 //    if(abs_omega>ID_START_RADPS)
-//        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*.8f;
-//    LIMTV(id_ref, .8f);
+//        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*abs_iq_ref*2.5f;
 
-    float iq_ref = 0.5f;1*ang_err/180.f;
 
+    LIMTV(iq_ref, 2.8f);
+    LIMTV(id_ref, iq_ref);
 //     static float theta = 0;
 //     static float iq_cos = 0.f;
 //     static float iq_sin = 0.f;
@@ -143,20 +166,22 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
 //    ref_q_pi = 0.0f;
 //    ref_d_pi = 0.0f;
 
-    float v_d_forward = -iq*L_q*omega_ele;
-    float v_q_forward = omega_ele*(id*L_d+psi_f);
-
-    if(ref_d_pi + v_d_forward > ubus*MAX_DUTY)
-        ref_d_pi = ubus*MAX_DUTY - v_d_forward;
-    if(ref_d_pi + v_d_forward < -ubus*MAX_DUTY)
-        ref_d_pi = -ubus*MAX_DUTY - v_d_forward;
-    if(ref_q_pi + v_q_forward > ubus*MAX_DUTY)
-        ref_q_pi = ubus*MAX_DUTY - v_q_forward;
-    if(ref_q_pi + v_q_forward < -ubus*MAX_DUTY)
-        ref_q_pi = -ubus*MAX_DUTY - v_q_forward;
+    float v_d_forward = 0;-iq*L_q*omega_ele;
+    float v_q_forward = 0;omega_ele*(id*L_d+psi_f);
 
     float ref_D_d = ref_d_pi + v_d_forward;
     float ref_D_q = ref_q_pi + v_q_forward;
+
+    float dq_sq = ref_D_d*ref_D_d + ref_D_q*ref_D_q;
+    float k_ref = ubus*MAX_DUTY*AHRS_invSqrt(dq_sq);
+    if(k_ref<1.f)
+    {
+        ref_D_d*=k_ref;
+        ref_D_q*=k_ref;
+    }
+    ref_d_pi = ref_D_d - v_d_forward;
+    ref_q_pi = ref_D_q - v_q_forward;
+
 
     ref_D_d /= ubus;
     ref_D_q /= ubus;
@@ -169,17 +194,42 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
 //     HRTIM_Manager_Ctrl_Set_A(0.25f*cos_f);
 //     HRTIM_Manager_Ctrl_Set_B(0.25f*sin_f);
 
-    HRTIM_Manager_Ctrl_Set_A(ref_D_a);
-    HRTIM_Manager_Ctrl_Set_B(ref_D_b);
-    HRTIM_Manager_Ctrl_Set_C(0.f);
+    float bias = (ref_D_a + ref_D_b) * 0.5f;
+    HRTIM_Manager_Ctrl_Set_A(ref_D_a-bias);
+    HRTIM_Manager_Ctrl_Set_B(ref_D_b-bias);
+    HRTIM_Manager_Ctrl_Set_C(0.f-bias);
 
     adc_read_test[0] = angle_ele/180.f;
-    adc_read_test[1] = id;
-    adc_read_test[2] = iq;
-    adc_read_test[3] = omega_ele;
-    adc_read_test[4] = ang_err;
+    adc_read_test[1] = ia;
+    adc_read_test[2] = ib;
+    adc_read_test[3] = angle_mec;
+    adc_read_test[4] = target_pos;
 }
 
+void Control_Loop_Set_Pos(float mec_deg){
+
+    if(mec_deg < 80 && mec_deg > -80){
+
+        ctrl_mode = POS_MODE;
+        target_pos = mec_deg;
+
+    }
+}
+void Control_Loop_Set_Speed(float Mec_radps){
+    if(Mec_radps < 150 && Mec_radps > -150)
+    {
+        ctrl_mode = SPEED_MODE;
+        target_speed = Mec_radps;
+    }
+}
+void Control_Loop_Set_Cur(float Cur_q){
+
+    if(Cur_q < 3 && Cur_q > -3)
+    {
+        ctrl_mode = CURRENT_MODE;
+        target_current = Cur_q;
+    }
+}
 
 float* Control_Loop_Get_test(void){
     return adc_read_test;

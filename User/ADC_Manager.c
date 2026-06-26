@@ -27,11 +27,12 @@ static volatile ADC_Angle_data ADC_angle_tmp;
 
 void ADC_Manager_Init(void){
 
-    ma600a_init();
+
     HAL_ADCEx_Calibration_Start(&hadc1,ADC_SINGLE_ENDED);
     HAL_ADCEx_Calibration_Start(&hadc2,ADC_SINGLE_ENDED);
 
-    HAL_Delay(80);
+    HAL_Delay(100);
+    ma600a_init();
 
     HAL_ADC_Start(&hadc2);
     HAL_ADCEx_MultiModeStart_DMA(&hadc1,(uint32_t*)ADC_Buffer,N_CH*2);

@@ -23,19 +23,22 @@ void ma600a_write_register(uint8_t reg_addr, uint8_t value) {
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi2, tx_buf, rx_buf, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-    for (volatile int i = 0; i < 25; i++) { __NOP(); }
+
+    HAL_Delay(1);
 
     // 第2帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi2, tx_buf+ 2, rx_buf + 2, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-    for (volatile int i = 0; i < 25; i++) { __NOP(); }
+
+    HAL_Delay(1);
 
     // 第3帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi2, tx_buf + 4, rx_buf + 4, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-    for (volatile int i = 0; i < 25; i++) { __NOP(); }
+
+    HAL_Delay(1);
     // 可选：验证 rx_buf[5] == value
 }
 
@@ -55,17 +58,14 @@ void ma600a_read_register(uint8_t *rxbuf, uint8_t reg_addr) {
     HAL_SPI_TransmitReceive(&hspi2, tx_buf, rx_buf, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
 
-    // 帧间延时：至少 120 ns
-    // 在 168 MHz 下，120 ns ≈ 21 个时钟周期
-    for (volatile int i = 0; i < 40; i++) {  // 多给几个余量
-        __NOP();
-    }
-
+    HAL_Delay(1);
     // 第2帧
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi2, tx_buf + 2, rx_buf + 2, 2, 100);
     HAL_GPIO_WritePin(CSn_GPIO_Port, CSn_Pin, GPIO_PIN_SET);
-    for (volatile int i = 0; i < 25; i++) { __NOP(); }
+
+    HAL_Delay(1);
+
     *rxbuf = rx_buf[3];
 }
 //读取角度的中断函数，非阻塞
