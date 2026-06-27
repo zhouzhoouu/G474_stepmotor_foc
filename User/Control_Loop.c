@@ -120,7 +120,7 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
         float ang_err = target_pos + zero_pos - angle_mec;
         while (ang_err > 180.f) ang_err -= 360.f;
         while (ang_err < -180.f) ang_err += 360.f;
-        iq_ref = 12*ang_err/180.f - 0.15f*angle_data->omega_mec;
+        iq_ref = 8*ang_err/180.f - 0.1f*angle_data->omega_mec;
     }
     else if(ctrl_mode == SPEED_MODE){
         float spd_err = target_speed - angle_data->omega_mec;
@@ -132,10 +132,10 @@ void Control_Manager_Loop(ADC_Raw_data* ADC_raw_read, ADC_Angle_data* angle_data
 
 
     float id_ref = -0.f;
-//    float abs_omega = omega_ele>0?omega_ele:-omega_ele;
-//    float abs_iq_ref = iq_ref>0?iq_ref:-iq_ref;
-//    if(abs_omega>ID_START_RADPS)
-//        id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*abs_iq_ref*2.5f;
+    // float abs_omega = omega_ele>0?omega_ele:-omega_ele;
+    // float abs_iq_ref = iq_ref>0?iq_ref:-iq_ref;
+    // if(abs_omega>ID_START_RADPS)
+    //     id_ref = -(abs_omega-ID_START_RADPS)/(5000.f-ID_START_RADPS)*abs_iq_ref*2.5f;
 
 
     LIMTV(iq_ref, 2.8f);

@@ -14,7 +14,8 @@ volatile Task_Func RING_TASK_BUFFER[MAX_TASK_NUM];
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
     if(htim->Instance == TIM6){
-        Task_Insert(ADC_Angle_Extract);
+        // Task_Insert(ADC_Angle_Extract);
+        ADC_Angle_Extract();
     }
     else if(htim->Instance == TIM7){
         Task_Insert(Comnunication_Loop);
